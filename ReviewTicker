@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReviewPulse — Every Review. Right Now.</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0D1B2A;
+    --navy-mid: #162436;
+    --amber: #F5A623;
+    --amber-dim: rgba(245,166,35,0.15);
+    --red: #E53E3E;
+    --red-dim: rgba(229,62,62,0.12);
+    --green: #38A169;
+    --green-dim: rgba(56,161,105,0.12);
+    --slate: #4A5568;
+    --mist: #A0AEC0;
+    --white: #F0F4F8;
+    --display: 'Syne', sans-serif;
+    --body: 'Inter', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: var(--body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 48px;
+    background: linear-gradient(to bottom, rgba(13,27,42,0.95), transparent);
+    backdrop-filter: blur(4px);
+  }
+  .logo {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+    color: var(--white);
+  }
+  .logo span { color: var(--amber); }
+  nav a {
+    color: var(--mist);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  nav a:hover { color: var(--white); }
+  .nav-cta {
+    background: var(--amber);
+    color: var(--navy) !important;
+    padding: 8px 20px;
+    border-radius: 4px;
+    font-weight: 600 !important;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 24px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ambient radial glow */
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -55%);
+    width: 800px; height: 600px;
+    background: radial-gradient(ellipse at center, rgba(245,166,35,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .eyebrow {
+    font-family: var(--body);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.2s forwards;
+  }
+
+  .hero-headline {
+    font-family: var(--display);
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    font-weight: 800;
+    line-height: 1.0;
+    letter-spacing: -0.03em;
+    color: var(--white);
+    max-width: 800px;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.4s forwards;
+  }
+  .hero-headline em {
+    font-style: normal;
+    color: var(--amber);
+  }
+
+  .hero-sub {
+    margin-top: 20px;
+    font-size: 1.1rem;
+    color: var(--mist);
+    max-width: 480px;
+    line-height: 1.6;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.6s forwards;
+  }
+
+  /* ── LIVE COUNTER — the signature moment ── */
+  .counter-stage {
+    margin-top: 64px;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.9s forwards;
+  }
+
+  .counter-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin-bottom: 12px;
+  }
+
+  .counter-wrap {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .counter-number {
+    font-family: var(--display);
+    font-size: clamp(4rem, 14vw, 9rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--white);
+    font-variant-numeric: tabular-nums;
+    transition: color 0.15s;
+  }
+  .counter-number.flash-red { color: var(--red); }
+
+  .counter-unit {
+    font-family: var(--display);
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
+    font-weight: 700;
+    color: var(--slate);
+    padding-bottom: clamp(0.6rem, 2vw, 1.2rem);
+  }
+
+  /* incoming review toasts */
+  .toast-stream {
+    position: relative;
+    height: 48px;
+    margin-top: 24px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 500px;
+  }
+  .toast {
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 18px;
+    border-radius: 100px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    border: 1px solid;
+    opacity: 0;
+    animation: toastIn 3s forwards;
+    pointer-events: none;
+  }
+  .toast.pos {
+    background: var(--green-dim);
+    border-color: rgba(56,161,105,0.3);
+    color: #68D391;
+  }
+  .toast.neg {
+    background: var(--red-dim);
+    border-color: rgba(229,62,62,0.3);
+    color: #FC8181;
+  }
+  .toast .platform {
+    font-size: 0.7rem;
+    opacity: 0.6;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .star { font-size: 0.9rem; letter-spacing: -1px; }
+
+  /* ── CTA ── */
+  .hero-actions {
+    margin-top: 48px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 0.7s 1.1s forwards;
+  }
+  .btn-primary {
+    background: var(--amber);
+    color: var(--navy);
+    border: none;
+    padding: 14px 32px;
+    border-radius: 5px;
+    font-family: var(--body);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: -0.01em;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(245,166,35,0.35); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--mist);
+    border: 1px solid var(--slate);
+    padding: 14px 28px;
+    border-radius: 5px;
+    font-family: var(--body);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-ghost:hover { border-color: var(--mist); color: var(--white); }
+
+  /* ── SOCIAL PROOF ── */
+  .proof-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 56px;
+    padding-top: 40px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    font-size: 0.78rem;
+    color: var(--slate);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 0.7s 1.3s forwards;
+  }
+  .proof-strip strong { color: var(--mist); font-weight: 600; }
+
+  /* ── PROBLEM SECTION ── */
+  .problem {
+    background: var(--navy-mid);
+    padding: 100px 24px;
+    text-align: center;
+  }
+  .section-eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 20px;
+    font-weight: 600;
+  }
+  .section-title {
+    font-family: var(--display);
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    max-width: 640px;
+    margin: 0 auto 48px;
+  }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .stat-card {
+    background: var(--navy);
+    padding: 40px 32px;
+    text-align: left;
+  }
+  .stat-card:first-child { border-radius: 8px 0 0 8px; }
+  .stat-card:last-child { border-radius: 0 8px 8px 0; }
+  .stat-num {
+    font-family: var(--display);
+    font-size: 2.8rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--amber);
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+  .stat-desc {
+    font-size: 0.88rem;
+    color: var(--mist);
+    line-height: 1.5;
+  }
+
+  /* ── FEATURE SECTION ── */
+  .features {
+    padding: 100px 24px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  .feature-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 48px;
+  }
+  .feature-item {
+    background: var(--navy);
+    padding: 36px 32px;
+    transition: background 0.2s;
+  }
+  .feature-item:hover { background: var(--navy-mid); }
+  .feature-icon {
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+  }
+  .feature-name {
+    font-family: var(--display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .feature-desc {
+    font-size: 0.88rem;
+    color: var(--mist);
+    line-height: 1.6;
+  }
+
+  /* ── FINAL CTA ── */
+  .final-cta {
+    background: var(--amber);
+    color: var(--navy);
+    padding: 100px 24px;
+    text-align: center;
+  }
+  .final-cta .cta-headline {
+    font-family: var(--display);
+    font-size: clamp(2rem, 5vw, 3.8rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 24px;
+  }
+  .final-cta .cta-sub {
+    font-size: 1rem;
+    opacity: 0.75;
+    margin-bottom: 36px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .btn-dark {
+    background: var(--navy);
+    color: var(--white);
+    border: none;
+    padding: 16px 36px;
+    border-radius: 5px;
+    font-family: var(--body);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn-dark:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(13,27,42,0.4); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes toastIn {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    15%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+    75%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+  }
+
+  @media (max-width: 600px) {
+    nav { padding: 16px 20px; }
+    .stat-card:first-child, .stat-card:last-child { border-radius: 0; }
+    .stat-grid { gap: 1px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Review<span>Pulse</span></div>
+  <div style="display:flex;gap:32px;align-items:center;">
+    <a href="#features">Features</a>
+    <a href="#" class="nav-cta">Request Demo</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="eyebrow">Live Review Intelligence</div>
+  <h1 class="hero-headline">
+    Right now, someone<br>is writing about <em>your brand.</em>
+  </h1>
+  <p class="hero-sub">
+    Reviews are arriving across dozens of platforms while you sleep, meet, and plan. ReviewPulse sees every one of them.
+  </p>
+
+  <!-- SIGNATURE: live counter -->
+  <div class="counter-stage">
+    <div class="counter-label">Reviews posted in the last 24 hours</div>
+    <div class="counter-wrap">
+      <div class="counter-number" id="counter">0</div>
+      <div class="counter-unit">reviews</div>
+    </div>
+    <div class="toast-stream" id="toastStream"></div>
+  </div>
+
+  <div class="hero-actions">
+    <button class="btn-primary">See It Live — Free</button>
+    <button class="btn-ghost">Watch 2-min demo →</button>
+  </div>
+
+  <div class="proof-strip">
+    <span><strong>4,200+</strong> brands trust ReviewPulse</span>
+    <span style="color:rgba(255,255,255,0.15)">|</span>
+    <span><strong>38 platforms</strong> monitored</span>
+    <span style="color:rgba(255,255,255,0.15)">|</span>
+    <span>Alerts in <strong>&lt; 90 seconds</strong></span>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem">
+  <div class="section-eyebrow">The gap brands don't see</div>
+  <h2 class="section-title">Every unread review is a missed moment.</h2>
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-num">53%</div>
+      <div class="stat-desc">of customers expect a reply to a negative review within 7 days — most brands take 4×  longer.</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">3.9×</div>
+      <div class="stat-desc">more revenue generated by brands who actively respond to reviews vs those who don't.</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">76%</div>
+      <div class="stat-desc">of consumers read reviews before purchasing — and notice when nobody's listening.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div style="text-align:center;">
+    <div class="section-eyebrow">What ReviewPulse does</div>
+    <h2 class="section-title">One dashboard. Every platform. Zero gaps.</h2>
+  </div>
+  <div class="feature-list">
+    <div class="feature-item">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-name">Real-Time Alerts</div>
+      <div class="feature-desc">New reviews surface in under 90 seconds across Google, Yelp, Trustpilot, App Store, G2, and 34 more platforms.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🧠</div>
+      <div class="feature-name">Sentiment Mapping</div>
+      <div class="feature-desc">AI reads between the lines — not just star ratings. Understand which product features or service moments drive feeling.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📊</div>
+      <div class="feature-name">Competitor Pulse</div>
+      <div class="feature-desc">Track how your reputation moves against the category. Know when a rival stumbles before the market does.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">✍️</div>
+      <div class="feature-name">Response Assist</div>
+      <div class="feature-desc">Draft on-brand replies in seconds. Approve, edit, or automate — your team stays in control.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📍</div>
+      <div class="feature-name">Location Intelligence</div>
+      <div class="feature-desc">For multi-location brands: surface underperforming sites, flag regional patterns, and close the feedback loop fast.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🔗</div>
+      <div class="feature-name">Slack & CRM Sync</div>
+      <div class="feature-desc">Push critical reviews straight into Salesforce, HubSpot, Zendesk, or wherever your team already works.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final-cta">
+  <h2 class="cta-headline">Stop finding out<br>two weeks too late.</h2>
+  <p class="cta-sub">Join 4,200+ brands who catch every review the moment it lands.</p>
+  <button class="btn-dark">Request a Live Demo</button>
+</section>
+
+<script>
+  // ── Live counter: starts at a plausible base, ticks up irregularly ──
+  const BASE = 1843;
+  let count = BASE;
+  const el = document.getElementById('counter');
+
+  function formatNum(n) {
+    return n.toLocaleString('en-US');
+  }
+
+  // Stagger-start the counter
+  setTimeout(() => {
+    el.textContent = formatNum(count);
+
+    // Irregular tick — reviews don't arrive evenly
+    function tick() {
+      const burst = Math.random() < 0.2 ? Math.floor(Math.random() * 4) + 2 : 1;
+      count += burst;
+      el.textContent = formatNum(count);
+
+      // Brief red flash on each new review
+      el.classList.add('flash-red');
+      setTimeout(() => el.classList.remove('flash-red'), 180);
+
+      const nextIn = 1400 + Math.random() * 3200;
+      setTimeout(tick, nextIn);
+    }
+    setTimeout(tick, 1800);
+  }, 1100);
+
+  // ── Review toasts ──
+  const reviews = [
+    { sentiment: 'pos', stars: '★★★★★', platform: 'Google', text: '"Fastest response we\'ve ever seen"' },
+    { sentiment: 'neg', stars: '★★☆☆☆', platform: 'Yelp', text: '"Nobody ever replied to my complaint"' },
+    { sentiment: 'pos', stars: '★★★★★', platform: 'Trustpilot', text: '"Incredible customer experience"' },
+    { sentiment: 'neg', stars: '★☆☆☆☆', platform: 'App Store', text: '"Ignored for three weeks"' },
+    { sentiment: 'pos', stars: '★★★★★', platform: 'G2', text: '"Exactly what we needed"' },
+    { sentiment: 'neg', stars: '★★☆☆☆', platform: 'Google', text: '"Still waiting for a response..."' },
+  ];
+
+  let reviewIdx = 0;
+  const stream = document.getElementById('toastStream');
+
+  function showToast() {
+    const r = reviews[reviewIdx % reviews.length];
+    reviewIdx++;
+
+    const t = document.createElement('div');
+    t.className = `toast ${r.sentiment}`;
+    t.innerHTML = `<span class="star">${r.stars}</span><span>${r.text}</span><span class="platform">${r.platform}</span>`;
+    stream.appendChild(t);
+
+    // Clean up after animation
+    setTimeout(() => t.remove(), 3100);
+
+    const nextIn = 3500 + Math.random() * 2000;
+    setTimeout(showToast, nextIn);
+  }
+
+  setTimeout(showToast, 2200);
+</script>
+</body>
+</html>
